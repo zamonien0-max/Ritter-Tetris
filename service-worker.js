@@ -1,5 +1,4 @@
-
-const CACHE_NAME = "schoko-tetris-v2";
+const CACHE_NAME = "schoko-tetris-v3";
 
 const ASSETS = [
   "./",
@@ -7,10 +6,11 @@ const ASSETS = [
   "./style.css",
   "./sketch.js",
   "./manifest.json",
-  "./GOTHICB.TTF",
-  "./Vollmilchstück.png",
-  "./dunkle Schoki.png",
-  "./weiße Schoki.png",
+  "./icon.svg",
+  "./icon-180.png",
+  "./schoki-vollmilch.png",
+  "./schoki-dunkel.png",
+  "./schoki-weiss.png",
   "https://cdn.jsdelivr.net/npm/p5@2.3.4/lib/p5.js"
 ];
 
@@ -48,16 +48,14 @@ self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
 
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-
-      return fetch(event.request).then(response => {
-        if (response.ok && new URL(event.request.url).origin === self.location.origin) {
+    fetch(event.request)
+      .then(response => {
+        if (response.ok) {
           const copy = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
         }
         return response;
-      });
-    })
+      })
+      .catch(() => caches.match(event.request))
   );
 });
