@@ -246,18 +246,19 @@ function spawnPiece() {
 }
 
 function draw() {
-    if (gameState === "loading") {
+  if (gameState === "loading") {
     updateLoading();
     if (gameState === "loading") {
       drawLoadingScreen();
       return;
     }
   }
+
   const dt = min(deltaTime, 50);
   lastTime += dt;
 
   background(themes[themeIndex].color);
-    textFont(gameFont);
+  textFont(gameFont);
 
   drawHeader();
   drawBoard();
@@ -266,7 +267,7 @@ function draw() {
   drawFooter();
 
   if (gameState === "playing") {
-      if (!paused && millis() >= clearAnimationUntil) {
+    if (!paused && millis() >= clearAnimationUntil) {
       if (clearRowsPending.length > 0) {
         finishRowClear();
       }
@@ -279,7 +280,7 @@ function draw() {
           stepDown();
         }
       }
-  
+    }
 
     if (clearRowsPending.length > 0) {
       drawClearingRows();
@@ -294,11 +295,11 @@ function draw() {
     );
   }
 
-   if (gameState === "over") {
+  if (gameState === "over") {
     if (gameOverTime === 0) gameOverTime = millis();
     drawGameOver();
   }
-  
+
   if (paused && gameState === "playing") {
     fill(0, 0, 0, 170);
     rect(BOARD_X - 5, BOARD_Y - 5, COLS * CELL + 10, ROWS * CELL + 10, 7);
@@ -309,7 +310,7 @@ function draw() {
     text("PAUSE", W / 2, BOARD_Y + (ROWS * CELL) / 2);
     textStyle(NORMAL);
   }
- }
+}
 
 function drawHeader() {
   noStroke();
