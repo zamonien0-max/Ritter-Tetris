@@ -361,8 +361,8 @@ function drawFooter() {
   textStyle(NORMAL);
   textSize(13);
 
-  text("← → wischen: BEWEGEN     tippen: DREHEN", W / 2, 826);
-  text("Schnell nach unten wischen: SOFORT FALLEN", W / 2, 866);
+  text("← → Wischen: Bewegen     Tippen: Drehen", W / 2, 826);
+  text("Schnell nach unten wischen: Sofort Fallen", W / 2, 866);
 
   textSize(11);
   text("HINTERGRUND ÄNDERN", W / 2, 888);
