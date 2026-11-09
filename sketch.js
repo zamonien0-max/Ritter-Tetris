@@ -22,6 +22,11 @@ let nextPiece;
 let gameFont;
 
 let paused = false;
+let loadedAssets = 0;
+const TOTAL_ASSETS = 4;          // Icon + 3 Schokoladenbilder
+let loadingStartTime = 0;
+const MIN_LOADING_TIME = 1500;   // Ladebildschirm mindestens 1,5 Sekunden (in ms)
+let failedFiles = [];
 let iconImage = null;
 const ICON_FILE = "icon.svg";   // Datei in den tetris-Ordner legen
 const HUB_URL = "../";          // später: Zurück zur Spieleauswahl
@@ -30,9 +35,10 @@ let score = 0;
 let lines = 0;
 let level = 1;
 
-let gameState = "menu";
+let gameState = "loading";
 let fallTimer = 0;
 let fallInterval = 700;
+let gameOverTime = 0;
 
 let particles = [];
 let clearRowsPending = [];
@@ -92,34 +98,101 @@ const shapes = [
 ];
 
 
-async function setup() {
+function setup() {
   createCanvas(W, H);
   fitCanvasToScreen();
-  let iconEl = new Image();
-  iconEl.onload = () => { iconImage = iconEl; };
-  iconEl.onerror = () => console.error("Bild nicht gefunden: " + ICON_FILE);
-  iconEl.src = ICON_FILE;
   setupTouchControls();
 
   imageMode(CORNER);
-   gameFont = "futura-pt";
+  gameFont = "futura-pt";
   textFont(gameFont);
   noStroke();
 
-  try {
-     chocolate.milk  = await loadImage("schoki-vollmilch.png");
-    chocolate.dark  = await loadImage("schoki-dunkel.png");
-    chocolate.white = await loadImage("schoki-weiss.png");
-    
-    resetGame();
+  loadingStartTime = millis();
 
-  } catch (error) {
-    console.error("Fehler beim Laden der Schokobilder:", error);
+  // Icon (Logo im Header und auf dem Ladebildschirm)
+  let iconEl = new Image();
+  iconEl.onload = () => { iconImage = iconEl; loadedAssets++; };
+  iconEl.onerror = () => loadFail(ICON_FILE);
+  iconEl.src = ICON_FILE;
+
+  // Schokoladenbilder
+  loadChocolate("milk",  "schoki-vollmilch.png");
+  loadChocolate("dark",  "schoki-dunkel.png");
+  loadChocolate("white", "schoki-weiss.png");
+}
+
+function drawLoadingScreen() {
+  background("#24264f");
+
+  const size = 150;
+  const cx = W / 2;
+  const cy = H / 2 - 30;
+
+  // Icon in der Mitte
+  if (iconImage) {
+    drawingContext.drawImage(iconImage, cx - size / 2, cy - size / 2, size, size);
   }
+
+  // Ladebalken
+  const barW = 250;
+  const barH = 8;
+  const barX = cx - barW / 2;
+  const barY = cy + size / 2 + 40;
+
+  const timeProgress = constrain((millis() - loadingStartTime) / MIN_LOADING_TIME, 0, 1);
+  const assetProgress = loadedAssets / TOTAL_ASSETS;
+  const progress = min(timeProgress, assetProgress);
+
+  noStroke();
+  fill("#383a68");
+  rect(barX, barY, barW, barH, 4);
+
+  fill("#e5183c");
+  rect(barX, barY, barW * progress, barH, 4);
+
+  // Fehlende Dateien anzeigen, damit der Fehler auch am Handy sichtbar ist
+  if (failedFiles.length > 0) {
+    textAlign(CENTER, CENTER);
+    textStyle(BOLD);
+    textSize(16);
+    fill("#ff6b6b");
+    text("Datei nicht gefunden:", W / 2, barY + 60);
+
+    textStyle(NORMAL);
+    textSize(14);
+    fill(255);
+    for (let i = 0; i < failedFiles.length; i++) {
+      text(failedFiles[i], W / 2, barY + 86 + i * 22);
+    }
+  }
+}
+
+function updateLoading() {
+  if (
+    loadedAssets >= TOTAL_ASSETS &&
+    millis() - loadingStartTime >= MIN_LOADING_TIME
+  ) {
+    resetGame();   // startet das Spiel
+  }
+}
+
+function loadChocolate(key, file) {
+  loadImage(
+    file,
+    img => { chocolate[key] = img; loadedAssets++; },
+    () => loadFail(file)
+  );
+}
+
+function loadFail(name) {
+  console.error("Bild nicht gefunden: " + name);
+  failedFiles.push(name);
 }
 
 function resetGame() {
   board = [];
+  gameOverTime = 0;
 
   for (let y = 0; y < ROWS; y++) {
     board.push(Array(COLS).fill(null));
@@ -167,6 +240,13 @@ function spawnPiece() {
 }
 
 function draw() {
+    if (gameState === "loading") {
+    updateLoading();
+    if (gameState === "loading") {
+      drawLoadingScreen();
+      return;
+    }
+  }
   const dt = min(deltaTime, 50);
   lastTime += dt;
 
@@ -208,12 +288,11 @@ function draw() {
     );
   }
 
-  if (gameState === "over") {
-    drawOverlay(
-      "GAME OVER",
-      "Punkte: " + score,
-      "TIPPE ZUM NOCHMAL SPIELEN"
-    );
+   if (gameState === "over") {
+    if (gameOverTime === 0) gameOverTime = millis();
+    drawGameOver();
+  }
+  
   if (paused && gameState === "playing") {
     fill(0, 0, 0, 170);
     rect(BOARD_X - 5, BOARD_Y - 5, COLS * CELL + 10, ROWS * CELL + 10, 7);
@@ -408,10 +487,10 @@ function drawFooter() {
   textSize(13);
 
   text("← → Wischen: Bewegen     Tippen: Drehen", W / 2, 826);
-  text("Schnell nach unten wischen: Sofort Fallen", W / 2, 866);
+  text("Schnell nach unten wischen: Sofort Fallen", W / 2, 846);
 
   textSize(11);
-  text("HINTERGRUND ÄNDERN", W / 2, 888);
+  text("HINTERGRUND ÄNDERN", W / 2, 884);
 
   const totalWidth = 5 * BUTTON_W + 4 * BUTTON_GAP;
   const startX = (W - totalWidth) / 2;
@@ -451,6 +530,49 @@ function drawOverlay(title, subtitle, instruction) {
 
   textSize(12);
  // text("Hintergrund mit 1–5 wählen", W / 2, H / 2 + 68);
+}
+
+function drawGameOver() {
+  fill(0, 0, 0, 180);
+  noStroke();
+  rect(0, 0, W, H);
+
+  // Farbe der gewählten Sorte
+  const levelColor = themes[themeIndex].color;
+
+  textAlign(CENTER, CENTER);
+  textStyle(BOLD);
+
+  // GAME OVER als Zweizeiler, riesig
+  fill(levelColor);
+  textSize(150);
+  text("GAME", W / 2, H / 2 - 165);
+  text("OVER", W / 2, H / 2 - 45);
+
+  fill(255);
+  textSize(24);
+  text("Punkte: " + score, W / 2, H / 2 + 40);
+
+  textStyle(NORMAL);
+  textSize(16);
+  text("TIPPE ZUM NEUSTARTEN", W / 2, H / 2 + 80);
+
+  // Button
+  const b = getMenuButtonBounds();
+  fill("#e5183c");
+  rect(b.x, b.y, b.w, b.h, 15);
+
+  fill(255);
+  textStyle(BOLD);
+  textSize(17);
+  text("ZUR SPIELAUSWAHL", b.x + b.w / 2, b.y + b.h / 2);
+  textStyle(NORMAL);
+}
+
+function getMenuButtonBounds() {
+  const w = 300;
+  const h = 50;
+  return { x: (W - w) / 2, y: H / 2 + 130, w: w, h: h };
 }
 
 function collides(piece, dx, dy, cells) {
@@ -673,6 +795,7 @@ function setupTouchControls() {
 
     const endX = (event.clientX - rect.left) * W / rect.width;
     const endY = (event.clientY - rect.top) * H / rect.height;
+        if (gameState === "loading") return;
 
         // Logo: zurück zur Spieleauswahl
     if (hitRect(endX, endY, getIconBounds())) {
@@ -712,7 +835,16 @@ function setupTouchControls() {
       return;
     }
 
-if (gameState === "over" || gameState === "menu") {
+if (gameState === "over") {
+  if (hitRect(endX, endY, getMenuButtonBounds())) {
+    window.location.href = HUB_URL;
+  } else if (millis() - gameOverTime > 700) {
+    resetGame();
+  }
+  return;
+}
+
+if (gameState === "menu") {
   resetGame();
   return;
 }
@@ -758,6 +890,7 @@ if (gameState !== "playing" || clearRowsPending.length > 0 || paused) return;
 
 
 function keyPressed(event) {
+    if (gameState === "loading") return false;
   // Neustart oder Spiel starten
   if (gameState === "menu" || gameState === "over") {
     if (event.key === "Enter" || event.code === "Space") {
