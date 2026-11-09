@@ -273,7 +273,7 @@ function draw() {
           stepDown();
         }
       }
-    }
+  
 
     if (clearRowsPending.length > 0) {
       drawClearingRows();
