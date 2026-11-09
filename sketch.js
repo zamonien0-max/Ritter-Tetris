@@ -87,15 +87,15 @@ async function setup() {
   setupTouchControls();
 
   imageMode(CORNER);
-  gameFont = await loadFont("GOTHICB.TTF");
+   gameFont = "futura-pt";
   textFont(gameFont);
   noStroke();
 
   try {
-    chocolate.milk = await loadImage("Vollmilchstück.png");
-    chocolate.dark = await loadImage("dunkle Schoki.png");
-    chocolate.white = await loadImage("weiße Schoki.png");
-
+     chocolate.milk  = await loadImage("schoki-vollmilch.png");
+    chocolate.dark  = await loadImage("schoki-dunkel.png");
+    chocolate.white = await loadImage("schoki-weiss.png");
+    
     resetGame();
 
   } catch (error) {
@@ -155,6 +155,7 @@ function draw() {
   lastTime += dt;
 
   background(themes[themeIndex].color);
+    textFont(gameFont);
 
   drawHeader();
   drawBoard();
