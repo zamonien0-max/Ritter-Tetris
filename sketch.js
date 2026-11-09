@@ -4,7 +4,9 @@ const H = 960;
 
 const COLS = 10;
 const ROWS = 20;
-const CELL = 27;
+const CELL = 30;
+const HEADER_H = 80;
+const BOARD_Y = 100;
 
 const BUTTON_W = 45;
 const BUTTON_H = 45;
@@ -12,13 +14,17 @@ const BUTTON_GAP = 10;
 const BUTTON_Y = 900;
 
 const BOARD_X = (W - COLS * CELL) / 2;
-const BOARD_Y = 190;
 
 let chocolate = {};
 let board = [];
 let currentPiece;
 let nextPiece;
 let gameFont;
+
+let paused = false;
+let iconImage = null;
+const ICON_FILE = "icon.svg";   // Datei in den tetris-Ordner legen
+const HUB_URL = "../";          // später: Zurück zur Spieleauswahl
 
 let score = 0;
 let lines = 0;
@@ -89,6 +95,10 @@ const shapes = [
 async function setup() {
   createCanvas(W, H);
   fitCanvasToScreen();
+  let iconEl = new Image();
+  iconEl.onload = () => { iconImage = iconEl; };
+  iconEl.onerror = () => console.error("Bild nicht gefunden: " + ICON_FILE);
+  iconEl.src = ICON_FILE;
   setupTouchControls();
 
   imageMode(CORNER);
@@ -116,6 +126,7 @@ function resetGame() {
   }
 
   score = 0;
+  paused = false;
   lines = 0;
   level = 1;
   fallTimer = 0;
@@ -169,7 +180,7 @@ function draw() {
   drawFooter();
 
   if (gameState === "playing") {
-    if (millis() >= clearAnimationUntil) {
+      if (!paused && millis() >= clearAnimationUntil) {
       if (clearRowsPending.length > 0) {
         finishRowClear();
       }
@@ -203,29 +214,64 @@ function draw() {
       "Punkte: " + score,
       "TIPPE ZUM NOCHMAL SPIELEN"
     );
+  if (paused && gameState === "playing") {
+    fill(0, 0, 0, 170);
+    rect(BOARD_X - 5, BOARD_Y - 5, COLS * CELL + 10, ROWS * CELL + 10, 7);
+    fill(255);
+    textAlign(CENTER, CENTER);
+    textStyle(BOLD);
+    textSize(40);
+    text("PAUSE", W / 2, BOARD_Y + (ROWS * CELL) / 2);
+    textStyle(NORMAL);
   }
+ }
 }
 
 function drawHeader() {
+  noStroke();
   fill(255);
-  textAlign(CENTER, CENTER);
 
-  textSize(18);
-  textStyle(BOLD);
-  text("RITTER SPORT", W / 2, 35);
-
-  textSize(34);
-  text("SCHOKO TETRIS", W / 2, 75);
-
+  // Punkte oben links
+  textAlign(LEFT, CENTER);
   textStyle(NORMAL);
   textSize(14);
-  text(themes[themeIndex].name, W / 2, 113);
+  text("PUNKTE", 20, 26);
+  textStyle(BOLD);
+  textSize(34);
+  text(String(score), 20, 54);
 
-  textSize(16);
-  text("PUNKTE   " + score, W / 2, 145);
+  // Sorte mittig, fett
+  textAlign(CENTER, CENTER);
+  textStyle(BOLD);
+  textSize(22);
+  text(themes[themeIndex].name, W / 2, HEADER_H / 2);
+  textStyle(NORMAL);
 
-  textSize(12);
-  text("REIHEN  " + lines + "     LEVEL  " + level, W / 2, 169);
+  // Pause-Symbol
+  const pb = getPauseBounds();
+  fill(255);
+  rect(pb.x + pb.w / 2 - 13, pb.y + pb.h / 2 - 17, 9, 34, 3);
+  rect(pb.x + pb.w / 2 + 4,  pb.y + pb.h / 2 - 17, 9, 34, 3);
+
+  // Logo
+  const ib = getIconBounds();
+  if (iconImage) {
+    drawingContext.drawImage(iconImage, ib.x, ib.y, ib.w, ib.h);
+  }
+}
+
+function getIconBounds() {
+  const size = 56;
+  return { x: W - size - 20, y: (HEADER_H - size) / 2, w: size, h: size };
+}
+
+function getPauseBounds() {
+  const ib = getIconBounds();
+  return { x: ib.x - 12 - 56, y: (HEADER_H - 60) / 2, w: 56, h: 60 };
+}
+
+function hitRect(px, py, b) {
+  return px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h;
 }
 
 function drawBoard() {
@@ -328,8 +374,8 @@ function drawNextPiece() {
   if (!nextPiece) return;
 
   const centerX = W / 2;
-  const labelY = 756;     // unter dem Spielfeld (Feld endet bei 735)
-  const topY = 774;
+   const labelY = 724;
+  const topY = 744;
   const previewCell = 18;
 
   fill(255);
@@ -628,6 +674,20 @@ function setupTouchControls() {
     const endX = (event.clientX - rect.left) * W / rect.width;
     const endY = (event.clientY - rect.top) * H / rect.height;
 
+        // Logo: zurück zur Spieleauswahl
+    if (hitRect(endX, endY, getIconBounds())) {
+      window.location.href = HUB_URL;
+      return;
+    }
+
+    // Pause-Button
+    if (hitRect(endX, endY, getPauseBounds())) {
+      if (gameState === "playing" && clearRowsPending.length === 0) {
+        paused = !paused;
+      }
+      return;
+    }
+
        // Farbbuttons antippen
     const totalWidth = 5 * BUTTON_W + 4 * BUTTON_GAP;
     const startX = (W - totalWidth) / 2;
@@ -657,7 +717,7 @@ if (gameState === "over" || gameState === "menu") {
   return;
 }
 
-if (gameState !== "playing" || clearRowsPending.length > 0) return;
+if (gameState !== "playing" || clearRowsPending.length > 0 || paused) return;
 
     const dx = endX - touchStartX;
     const dy = endY - touchStartY;
@@ -718,8 +778,14 @@ function keyPressed(event) {
     return false;
   }
 
+  // Pause mit P
+  if (event.key.toLowerCase() === "p" && gameState === "playing") {
+    paused = !paused;
+    return false;
+  }
+
   // Steuerung nur während des Spiels
-  if (gameState !== "playing" || clearRowsPending.length > 0) {
+  if (gameState !== "playing" || clearRowsPending.length > 0 || paused) {
     return false;
   }
 
@@ -791,4 +857,5 @@ function fitCanvasToScreen() {
   document.body.style.height = "100%";
   document.body.style.overflow = "hidden";
   document.body.style.background = "#111";
+  
 }
