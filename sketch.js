@@ -9,7 +9,7 @@ const CELL = 27;
 const BUTTON_W = 45;
 const BUTTON_H = 45;
 const BUTTON_GAP = 10;
-const BUTTON_Y = 880;
+const BUTTON_Y = 900;
 
 const BOARD_X = (W - COLS * CELL) / 2;
 const BOARD_Y = 190;
@@ -361,9 +361,8 @@ function drawFooter() {
   textStyle(NORMAL);
   textSize(13);
 
-  text("← → WISCHEN: BEWEGEN     TIPPEN: DREHEN", W / 2, 826);
-  text("LANGSAM NACH UNTEN ZIEHEN: SCHNELLER", W / 2, 846);
-  text("SCHNELL NACH UNTEN WISCHEN: SOFORT FALLEN", W / 2, 866);
+  text("← → wischen: BEWEGEN     tippen: DREHEN", W / 2, 826);
+  text("Schnell nach unten wischen: SOFORT FALLEN", W / 2, 866);
 
   textSize(11);
   text("HINTERGRUND ÄNDERN", W / 2, 888);
