@@ -39,10 +39,10 @@ let lastTime = 0;
 // Die anderen drei sind vorläufige Platzhalter.
 const themes = [
   { name: "MARZIPAN", color: "#E5183C" },
-  { name: "NUSS", color: "#6bb53d" },
-  { name: "KNUSPERFLAKES", color: "#efbe08" },
+  { name: "HASELNUSS", color: "#6bb53d" },
+  { name: "KNUSPERFLAKES", color: "#ffd220" },
   { name: "ALPENMILCH", color: "#19b1e7" },
-  { name: "ERDBEERE", color: "#E99AB2" }
+  { name: "ERDBEER", color: "#E99AB2" }
 ];
 
 // Jede Form besteht aus genau einer Schokoladensorte.
