@@ -106,8 +106,10 @@ const shapes = [
 
 function setup() {
   createCanvas(W, H);
+
   fitCanvasToScreen();
-  setupTouchControls();
+
+  setTimeout(setupTouchControls, 100);
 
   imageMode(CORNER);
   gameFont = "futura-pt";
@@ -116,15 +118,16 @@ function setup() {
 
   loadingStartTime = millis();
 
-  // Icon (Logo im Header und auf dem Ladebildschirm)
   let iconEl = new Image();
-  iconEl.onload = () => { iconImage = iconEl; loadedAssets++; };
+  iconEl.onload = () => {
+    iconImage = iconEl;
+    loadedAssets++;
+  };
   iconEl.onerror = () => loadFail(ICON_FILE);
   iconEl.src = ICON_FILE;
 
-  // Schokoladenbilder
-  loadChocolate("milk",  "schoki-vollmilch.png");
-  loadChocolate("dark",  "schoki-dunkel.png");
+  loadChocolate("milk", "schoki-vollmilch.png");
+  loadChocolate("dark", "schoki-dunkel.png");
   loadChocolate("white", "schoki-weiss.png");
 }
 
