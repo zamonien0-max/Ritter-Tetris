@@ -6,6 +6,11 @@ const COLS = 10;
 const ROWS = 20;
 const CELL = 27;
 
+const BUTTON_W = 45;
+const BUTTON_H = 45;
+const BUTTON_GAP = 10;
+const BUTTON_Y = 880;
+
 const BOARD_X = (W - COLS * CELL) / 2;
 const BOARD_Y = 190;
 
@@ -323,18 +328,18 @@ function drawNextPiece() {
   if (!nextPiece) return;
 
   const centerX = W / 2;
-  const topY = 745;
-  const previewCell = 20;
+  const labelY = 756;     // unter dem Spielfeld (Feld endet bei 735)
+  const topY = 774;
+  const previewCell = 18;
 
   fill(255);
   textAlign(CENTER, CENTER);
   textStyle(BOLD);
   textSize(13);
-  text("NÄCHSTE FORM", centerX, 723);
+  text("NÄCHSTE FORM", centerX, labelY);
   textStyle(NORMAL);
 
   const maxX = max(...nextPiece.cells.map(c => c[0])) + 1;
-  const maxY = max(...nextPiece.cells.map(c => c[1])) + 1;
 
   const startX = centerX - maxX * previewCell / 2;
   const startY = topY;
@@ -353,42 +358,31 @@ function drawNextPiece() {
 function drawFooter() {
   fill(255, 235);
   textAlign(CENTER, CENTER);
-  textSize(12);
+  textStyle(NORMAL);
+  textSize(13);
 
-  text("← → BEWEGEN     ↑ DREHEN     ↓ SCHNELLER", W / 2, 830);
-  text("LEERTASTE: SOFORT FALLEN", W / 2, 852);
+  text("← → WISCHEN: BEWEGEN     TIPPEN: DREHEN", W / 2, 826);
+  text("LANGSAM NACH UNTEN ZIEHEN: SCHNELLER", W / 2, 846);
+  text("SCHNELL NACH UNTEN WISCHEN: SOFORT FALLEN", W / 2, 866);
 
   textSize(11);
-  text("HINTERGRUND ÄNDERN", W / 2, 880);
+  text("HINTERGRUND ÄNDERN", W / 2, 888);
 
-  const buttonWidth = 42;
-  const buttonHeight = 28;
-  const gap = 10;
-  const totalWidth = 5 * buttonWidth + 4 * gap;
+  const totalWidth = 5 * BUTTON_W + 4 * BUTTON_GAP;
   const startX = (W - totalWidth) / 2;
-  const buttonY = 895;
 
   for (let i = 0; i < 5; i++) {
+    const bx = startX + i * (BUTTON_W + BUTTON_GAP);
+
     fill(themes[i].color);
     stroke(255);
     strokeWeight(themeIndex === i ? 3 : 1);
-
-    rect(
-      startX + i * (buttonWidth + gap),
-      buttonY,
-      buttonWidth,
-      buttonHeight,
-      5
-    );
+    rect(bx, BUTTON_Y, BUTTON_W, BUTTON_H, 5);
 
     noStroke();
     fill(255);
     textSize(14);
-    text(
-      String(i + 1),
-      startX + i * (buttonWidth + gap) + buttonWidth / 2,
-      buttonY + buttonHeight / 2
-    );
+    text(String(i + 1), bx + BUTTON_W / 2, BUTTON_Y + BUTTON_H / 2);
   }
 }
 
@@ -635,27 +629,23 @@ function setupTouchControls() {
     const endX = (event.clientX - rect.left) * W / rect.width;
     const endY = (event.clientY - rect.top) * H / rect.height;
 
-    // Farbbuttons antippen
-    const buttonWidth = 42;
-    const buttonHeight = 28;
-    const gap = 10;
-    const totalWidth = 5 * buttonWidth + 4 * gap;
+       // Farbbuttons antippen
+    const totalWidth = 5 * BUTTON_W + 4 * BUTTON_GAP;
     const startX = (W - totalWidth) / 2;
-    const buttonY = 895;
 
     if (
-  endY >= buttonY &&
-  endY <= buttonY + buttonHeight &&
-  endX >= startX &&
-  endX <= startX + totalWidth
-) {
+      endY >= BUTTON_Y &&
+      endY <= BUTTON_Y + BUTTON_H &&
+      endX >= startX &&
+      endX <= startX + totalWidth
+    ) {
       const relativeX = endX - startX;
-      const buttonIndex = Math.floor(relativeX / (buttonWidth + gap));
+      const buttonIndex = Math.floor(relativeX / (BUTTON_W + BUTTON_GAP));
 
       if (
         buttonIndex >= 0 &&
         buttonIndex < 5 &&
-        relativeX % (buttonWidth + gap) <= buttonWidth
+        relativeX % (BUTTON_W + BUTTON_GAP) <= BUTTON_W
       ) {
         themeIndex = buttonIndex;
       }
@@ -684,13 +674,15 @@ if (gameState !== "playing" || clearRowsPending.length > 0) return;
         if (collides(currentPiece, direction, 0, currentPiece.cells)) break;
         currentPiece.x += direction;
       }
-    } else if (dy > 0) {
-      if (duration > 500 && dy > 100) {
+      } else if (dy > 0) {
+      if (duration < 300 && dy > 80) {
+        // Schneller Wisch nach unten: sofort fallen lassen
         while (!collides(currentPiece, 0, 1, currentPiece.cells)) {
           currentPiece.y++;
         }
         lockPiece();
       } else {
+        // Langsames Ziehen: feldweise nach unten
         const steps = Math.max(1, Math.round(dy / 35));
 
         for (let i = 0; i < steps; i++) {
