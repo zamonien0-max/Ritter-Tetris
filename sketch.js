@@ -1,3 +1,9 @@
+window.addEventListener("error", e => {
+  let d = document.createElement("div");
+  d.style.cssText = "position:fixed;left:0;top:0;right:0;background:#900;color:#fff;font:14px monospace;padding:8px;z-index:9999";
+  d.textContent = e.message + " (Zeile " + e.lineno + ")";
+  document.body.appendChild(d);
+});
 
 const W = 540;
 const H = 960;
