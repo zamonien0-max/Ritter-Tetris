@@ -304,7 +304,6 @@ function draw() {
     textStyle(NORMAL);
   }
  }
-}
 
 function drawHeader() {
   noStroke();
